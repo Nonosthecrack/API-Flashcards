@@ -1,13 +1,11 @@
 import {db} from "../db/database.js"
-import { collectionTable, flashCardTable } from "../db/schema.js"
+import { collectionTable, flashCardTable} from "../db/schema.js"
 import {eq, or} from 'drizzle-orm'
 
 export const getAllFlashcards = async (req, res) => {
     try{
 
-
-
-        var flashCards = await db.select({ rectoText: flashCardTable.rectoText }).from(flashCardTable).innerJoin(
+        var flashCards = await db.select({ rectoText: flashCardTable.rectoText, id: flashCardTable.id }).from(flashCardTable).innerJoin(
         collectionTable,
         eq(flashCardTable.collectionId, collectionTable.id))
         .where(
@@ -17,7 +15,7 @@ export const getAllFlashcards = async (req, res) => {
             ))
 
         if(req.user.role == 'ADMIN'){
-            flashCards = await db.select({ rectoText: flashCardTable.rectoText }).from(flashCardTable).innerJoin(
+            flashCards = await db.select({ rectoText: flashCardTable.rectoText, id: flashCardTable.id }).from(flashCardTable).innerJoin(
             collectionTable,
             eq(flashCardTable.collectionId, collectionTable.id)) 
         }
@@ -35,7 +33,7 @@ export const getAllFlashcards = async (req, res) => {
 
 export const createFlashcard = async (req, res) => {
     try{
-        const {rectoText, versoText, rectoUrl, versoUrl, collectionId} = req.body //ptet supprimer ownerId  du coup
+        const {rectoText, versoText, rectoUrl, versoUrl, collectionId} = req.body 
 
         const userId = req.user.userId
 
@@ -63,17 +61,46 @@ export const deleteFlashcard = async (req, res) => {
             const[deletedFlashcard] = await db.delete(flashCardTable).where(eq(flashCardTable.id, idFC)).returning()
 
             if(!(deletedFlashcard)){
-                return res.status(404).json({error : 'Question not Found'})
+                return res.status(404).json({error : 'Card not Found'})
             }
 
         } else {
             return res.status(403).json({
-                message: "You aren't allowed to delete this question"
+                message: "You aren't allowed to delete this Card"
             })
         }
-    } catch( error){
+    } catch(error){
         res.status(500).json({
-            error:"Failed to delete questions"
+            error:"Failed to delete Cards"
         })
     }
+}
+
+export const modifyFlashCard = async (req, res) => {
+
+        const {idFC} = req.params
+
+        const {versoText2, rectoText2, versoUrl2, rectoUrl2} = req.body
+
+        const collectionOwnerToModify = await db.select(ownerId).from(flashCardTable).where(eq(flashCardTable.ownerId, idFC))
+
+        if(req.user.userId == collectionOwnerToModify || req.user.role == 'ADMIN'){
+            const[ModifiedFlashcard] = await db.update(flashCardTable).set({
+
+                rectoText: rectoText2,
+                versoText: versoText2,
+                rectoUrl: rectoUrl2,
+                versoUrl: versoUrl2
+
+            }).where(eq(flashCardTable.id, idFC)).returning()
+
+            if(!(ModifiedFlashcard)){
+                return res.status(404).json({error : 'Card not Found'})
+            }
+
+        } else {
+            return res.status(403).json({
+                message: "You aren't allowed to modify this Card"
+            })
+        }
 }

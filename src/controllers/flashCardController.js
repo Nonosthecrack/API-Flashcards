@@ -1,5 +1,5 @@
 import {db} from "../db/database.js"
-import { collectionTable, flashCardTable} from "../db/schema.js"
+import {collectionTable, flashCardTable} from "../db/schema.js"
 import {eq, or} from 'drizzle-orm'
 
 export const getAllFlashcards = async (req, res) => {
@@ -40,7 +40,7 @@ export const createFlashcard = async (req, res) => {
         await db.insert(flashCardTable).values({rectoText: rectoText, rectoUrl: rectoUrl, versoText: versoText, versoUrl: versoUrl, collectionId: collectionId, ownerId: userId})
     
         res.status(201).json({
-            message : "Flashcard succesfully created"
+            message : "Flashcard successfully created"
         })
 
     } catch (error){
@@ -103,4 +103,5 @@ export const modifyFlashCard = async (req, res) => {
                 message: "You aren't allowed to modify this Card"
             })
         }
+    
 }

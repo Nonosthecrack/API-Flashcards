@@ -4,7 +4,6 @@ import {eq, lt, or} from 'drizzle-orm'
 
 export const studyFlashCard = async (req, res) => {
 
-    try {
         
         const {idFC} = req.params
         const {userAnswer} = req.body
@@ -44,12 +43,5 @@ export const studyFlashCard = async (req, res) => {
             }
 
         }
-    }
-
-    catch (error) {
-        res.status(500).json({
-            error:"Failed to study flashcard"
-        })
-    }
-
 }
+

@@ -77,3 +77,23 @@ export const login = async (req, res) => {
         res.status(500).json({ error: 'login failed' })
     }
 }
+
+export const me = async (req, res) => {
+    try {
+        const [user] = await db
+            .select({
+                id: usersTable.id,
+                email: usersTable.email,
+                name: usersTable.name,
+                surname: usersTable.surname,
+                role: usersTable.role,
+            })
+            .from(usersTable)
+            .where(eq(usersTable.id, req.user.userId))
+            .limit(1)
+        res.status(200).json(user)
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ error: 'Failed to fetch user' })
+    }
+}

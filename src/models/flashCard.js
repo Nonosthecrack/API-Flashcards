@@ -11,3 +11,10 @@ export const createFlashCardSchema = z.object({
     
     collectionId: z.string().min(1,'The flashcard needs to belong to a collection !'),
 })
+
+export const updateFlashCardSchema = z.object({
+    rectoText: z.string().min(1).max(300).optional(),
+    versoText: z.string().min(1).max(300).optional(),
+    rectoUrl: z.string().optional(),
+    versoUrl: z.string().optional(),
+})

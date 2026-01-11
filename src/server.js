@@ -5,6 +5,7 @@ import authRouter from './routers/authRoutes.js'
 import flashCardRouter from './routers/flashCardRoutes.js'
 import collectionRouter from './routers/collectionRoutes.js'
 import adminUsersRouter from './routers/adminUsersRoutes.js'
+import revisionRouter from './routers/revisionRoutes.js'
 
 const PORT = process.env.PORT || 3000
 
@@ -17,6 +18,7 @@ app.use('/auth', authRouter)
 app.use('/flashcards', flashCardRouter)
 app.use('/collections', collectionRouter)
 app.use('/admin/users', adminUsersRouter)
+app.use('/revision', revisionRouter)
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`)

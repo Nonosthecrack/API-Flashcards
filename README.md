@@ -20,5 +20,5 @@ Ces commandes créent et remplissent la base de données.
 
 Enfin, lancez **npm run dev** pour lancer l'API
 
-La documentation Technique se trouve a la racine du projet (Technic Doucmentation.md)
+La documentation Technique se trouve a la racine du projet (Technic Documentation.md)
 

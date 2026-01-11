@@ -18,9 +18,6 @@ router.post('/', validateBody(createFlashCardSchema), createFlashcard)
 
 router.put('/:id', validateBody(updateFlashCardSchema), updateFlashcard)
 
-
 router.delete('/:id', deleteFlashcard)
-
-router.patch('/:id', validateBody(modifyFlashCardSchema),modifyFlashCard)
 
 export default router

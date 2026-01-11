@@ -54,26 +54,36 @@ export const createFlashcard = async (req, res) => {
 }
 
 export const deleteFlashcard = async (req, res) => {
-    try{
-        const {idFC} = req.params
+    try {
+        const { id } = req.params  
 
-        const FlashCardOwnerToDelete = await db.select(ownerId).from(flashCardTable).where(eq(flashCardTable.id, idFC)).returning()
+        const [flashcard] = await db
+            .select()
+            .from(flashCardTable)
+            .where(eq(flashCardTable.id, id))
 
-        if(req.user.userId == FlashCardOwnerToDelete || req.user.role == 'ADMIN'){
-            const[deletedFlashcard] = await db.delete(flashCardTable).where(eq(flashCardTable.id, idFC)).returning()
+        if (!flashcard) {
+            return res.status(404).json({ error: 'Flashcard not found' })
+        }
 
-            if(!(deletedFlashcard)){
-                return res.status(404).json({error : 'Question not Found'})
-            }
+        if (req.user.userId === flashcard.ownerId || req.user.role === 'ADMIN') {
+            const [deletedFlashcard] = await db
+                .delete(flashCardTable)
+                .where(eq(flashCardTable.id, id))
+                .returning()
 
+            return res.status(200).json({ 
+                message: 'Flashcard deleted successfully' 
+            })
         } else {
             return res.status(403).json({
-                message: "You aren't allowed to delete this question"
+                error: "You aren't allowed to delete this flashcard"
             })
         }
-    } catch( error){
+    } catch (error) {
+        console.error(error)
         res.status(500).json({
-            error:"Failed to delete questions"
+            error: "Failed to delete flashcard"
         })
     }
 }

@@ -11,7 +11,7 @@ https://app.eraser.io/workspace/01gYJK25JWKMlChhTTyp
 
 # Installation
 
-Une fois le dépôt cloné, éxécutez le fichier initialisation.bat, permttant d'installer toutes les dépendances npm requises. Ensuite, tapez ces deux commandes
+Une fois le dépôt cloné, éxécutez le fichier initialisation.bat, permettant d'installer toutes les dépendances npm requises. Ensuite, tapez ces deux commandes
 
 - **npm run db:push**
 - **npm run db:seed**
@@ -20,4 +20,5 @@ Ces commandes créent et remplissent la base de données.
 
 Enfin, lancez **npm run dev** pour lancer l'API
 
+La documentation Technique se trouve a la racine du projet (Technic Doucmentation.md)
 

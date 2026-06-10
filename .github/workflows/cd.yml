@@ -15,24 +15,22 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: Deploiement via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd ~/app
+      - name: Checkout du code
+        uses: actions/checkout@v4
 
-            # Recupere le dernier code
-            git pull origin main
+      - name: Deploiement
+        run: |
+          cd ~/app
 
-            # Rebuild et redemarre le container
-            docker compose up -d --build
+          # Recupere le dernier code
+          git pull origin main
 
-            # Affiche l'etat du container
-            docker compose ps
+          # Rebuild et redemarre le container
+          docker compose up -d --build
 
-            # Verifie que l'API repond
-            sleep 5
-            curl -sf http://localhost:3000/health && echo "API OK" || echo "API KO"
+          # Affiche l'etat du container
+          docker compose ps
+
+          # Verifie que l'API repond
+          sleep 5
+          curl -sf http://localhost:3000/health && echo "API OK" || echo "API KO"

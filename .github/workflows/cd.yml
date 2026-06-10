@@ -9,7 +9,7 @@ on:
 jobs:
   deploy:
     name: Deploiement sur la VM
-    runs-on: ubuntu-latest
+    runs-on: self-hosted 
 
     # Ne se lance que si le workflow CI a reussi
     if: ${{ github.event.workflow_run.conclusion == 'success' }}

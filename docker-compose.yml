@@ -1,0 +1,24 @@
+services:
+  api:
+    build: .
+    container_name: api-flashcards
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_FILE=file:/app/data/flashcards.db
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=3000
+    volumes:
+      # Persistance de la base de donnees SQLite
+      - db_data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  db_data:
+    driver: local

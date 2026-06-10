@@ -1,6 +1,6 @@
 import { db } from "../db/database.js"
 import { personnalFlashCardsTable, flashCardTable } from "../db/schema.js"
-import { eq, lte } from "drizzle-orm"
+import { and, eq, lte } from "drizzle-orm"
 
 export const getFlashcardsToReview = async (req, res) => {
     try {
@@ -20,8 +20,10 @@ export const getFlashcardsToReview = async (req, res) => {
                 eq(personnalFlashCardsTable.flashCardId, flashCardTable.id)
             )
             .where(
-                eq(personnalFlashCardsTable.userId, userId),
-                lte(personnalFlashCardsTable.nextStudyDate, now)
+                and(
+                    eq(personnalFlashCardsTable.userId, userId),
+                    lte(personnalFlashCardsTable.nextStudyDate, now)
+                )
             )
 
         res.status(200).json(flashcards)
@@ -31,6 +33,7 @@ export const getFlashcardsToReview = async (req, res) => {
         res.status(500).json({ error: "Failed to fetch flashcards to review" })
     }
 }
+
 const LEVEL_DELAYS = {
     1: 1,
     2: 2,
@@ -48,17 +51,14 @@ export const reviewFlashcard = async (req, res) => {
             .select()
             .from(personnalFlashCardsTable)
             .where(
-                eq(personnalFlashCardsTable.flashCardId, flashCardId),
-                eq(personnalFlashCardsTable.userId, userId)
+                and(
+                    eq(personnalFlashCardsTable.flashCardId, flashCardId),
+                    eq(personnalFlashCardsTable.userId, userId)
+                )
             )
             .limit(1)
 
-        // 📌 Première révision → création
         if (!progress) {
-            progress = {
-                level: 1
-            }
-
             await db.insert(personnalFlashCardsTable).values({
                 userId,
                 flashCardId,

@@ -1,0 +1,38 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploiement sur la VM
+    runs-on: ubuntu-latest
+
+    # Ne se lance que si le workflow CI a reussi
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Deploiement via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/app
+
+            # Recupere le dernier code
+            git pull origin main
+
+            # Rebuild et redemarre le container
+            docker compose up -d --build
+
+            # Affiche l'etat du container
+            docker compose ps
+
+            # Verifie que l'API repond
+            sleep 5
+            curl -sf http://localhost:3000/health && echo "API OK" || echo "API KO"

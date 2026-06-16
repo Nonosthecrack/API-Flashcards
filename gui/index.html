@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Flashcards — Test GUI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #242740;
+      --border: #2e3252;
+      --accent: #6c63ff;
+      --accent2: #a78bfa;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --blue: #3b82f6;
+      --text: #e2e8f0;
+      --text2: #94a3b8;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    #sidebar h1 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      padding: 18px 16px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-group { padding: 10px 0 4px; }
+
+    .nav-group-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text2);
+      padding: 4px 16px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text2);
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--surface2); color: var(--accent2); border-left-color: var(--accent); }
+
+    .method-badge {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 3px;
+      min-width: 34px;
+      text-align: center;
+    }
+
+    .GET    { background: #1a3a1a; color: var(--green); }
+    .POST   { background: #1a2a3a; color: var(--blue); }
+    .PUT    { background: #3a2a1a; color: var(--yellow); }
+    .PATCH  { background: #3a2a1a; color: var(--yellow); }
+    .DELETE { background: #3a1a1a; color: var(--red); }
+
+    /* ── MAIN ── */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── TOKEN BAR ── */
+    #token-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #token-bar label { font-size: 12px; color: var(--text2); white-space: nowrap; }
+
+    #token-input {
+      flex: 1;
+      min-width: 200px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 10px;
+      color: var(--text);
+      font-size: 12px;
+      font-family: monospace;
+    }
+
+    #base-url-input {
+      width: 220px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 10px;
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    .token-status {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .token-ok   { background: #1a3a1a; color: var(--green); }
+    .token-none { background: #3a1a1a; color: var(--red); }
+
+    /* ── WORKSPACE ── */
+    #workspace {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    #request-panel {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+
+    #response-panel {
+      width: 45%;
+      min-width: 300px;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── REQUEST PANEL ── */
+    .route-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .route-title .method-badge { font-size: 12px; padding: 4px 9px; }
+
+    .route-desc {
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 20px;
+    }
+
+    .field-group {
+      margin-bottom: 16px;
+    }
+
+    .field-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 6px;
+    }
+
+    .field-group input,
+    .field-group textarea,
+    .field-group select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 9px 12px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .field-group input:focus,
+    .field-group textarea:focus,
+    .field-group select:focus {
+      border-color: var(--accent);
+    }
+
+    .field-group textarea {
+      font-family: 'Consolas', 'Fira Code', monospace;
+      font-size: 12px;
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .send-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 10px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+
+    .send-btn:hover { opacity: .85; }
+    .send-btn:active { opacity: .7; }
+    .send-btn:disabled { opacity: .4; cursor: default; }
+
+    /* ── RESPONSE PANEL ── */
+    #response-panel h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    #response-status {
+      font-size: 13px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 5px;
+      display: inline-block;
+    }
+
+    .status-2xx { background: #1a3a1a; color: var(--green); }
+    .status-4xx { background: #3a2a1a; color: var(--yellow); }
+    .status-5xx { background: #3a1a1a; color: var(--red); }
+
+    #response-time { font-size: 12px; color: var(--text2); }
+
+    #response-body {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      font-family: 'Consolas', 'Fira Code', monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      overflow-y: auto;
+      color: var(--text);
+      max-height: 60vh;
+    }
+
+    .copy-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 5px 12px;
+      color: var(--text2);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .copy-btn:hover { background: var(--surface); color: var(--text); }
+
+    .hint {
+      color: var(--text2);
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    /* ── HOME ── */
+    #home {
+      padding: 40px;
+      max-width: 680px;
+    }
+
+    #home h2 { font-size: 24px; margin-bottom: 10px; }
+    #home p  { color: var(--text2); font-size: 14px; line-height: 1.7; margin-bottom: 16px; }
+
+    .route-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .route-table th {
+      text-align: left; padding: 8px 12px;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .route-table td { padding: 7px 12px; border-top: 1px solid var(--border); }
+    .route-table tr:hover td { background: var(--surface2); }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <h1>⚡ API Flashcards</h1>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Accueil</div>
+    <div class="nav-item active" data-route="home">🏠 Vue d'ensemble</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Auth</div>
+    <div class="nav-item" data-route="auth-register"><span class="method-badge POST">POST</span> /register</div>
+    <div class="nav-item" data-route="auth-login"><span class="method-badge POST">POST</span> /login</div>
+    <div class="nav-item" data-route="auth-me"><span class="method-badge GET">GET</span> /me</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Collections</div>
+    <div class="nav-item" data-route="col-list"><span class="method-badge GET">GET</span> /collections</div>
+    <div class="nav-item" data-route="col-mine"><span class="method-badge GET">GET</span> /collections/me</div>
+    <div class="nav-item" data-route="col-get"><span class="method-badge GET">GET</span> /collections/:id</div>
+    <div class="nav-item" data-route="col-create"><span class="method-badge POST">POST</span> /collections</div>
+    <div class="nav-item" data-route="col-update"><span class="method-badge PUT">PUT</span> /collections/:id</div>
+    <div class="nav-item" data-route="col-delete"><span class="method-badge DELETE">DELETE</span> /collections/:id</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Flashcards</div>
+    <div class="nav-item" data-route="fc-list"><span class="method-badge GET">GET</span> /flashcards</div>
+    <div class="nav-item" data-route="fc-get"><span class="method-badge GET">GET</span> /flashcards/:id</div>
+    <div class="nav-item" data-route="fc-by-col"><span class="method-badge GET">GET</span> /flashcards/collection</div>
+    <div class="nav-item" data-route="fc-create"><span class="method-badge POST">POST</span> /flashcards</div>
+    <div class="nav-item" data-route="fc-update"><span class="method-badge PUT">PUT</span> /flashcards/:id</div>
+    <div class="nav-item" data-route="fc-delete"><span class="method-badge DELETE">DELETE</span> /flashcards/:id</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Révision</div>
+    <div class="nav-item" data-route="rev-list"><span class="method-badge GET">GET</span> /revision/to-review</div>
+    <div class="nav-item" data-route="rev-review"><span class="method-badge POST">POST</span> /revision/review</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Admin</div>
+    <div class="nav-item" data-route="admin-users"><span class="method-badge GET">GET</span> /admin/users</div>
+    <div class="nav-item" data-route="admin-user-get"><span class="method-badge GET">GET</span> /admin/users/:id</div>
+    <div class="nav-item" data-route="admin-user-delete"><span class="method-badge DELETE">DELETE</span> /admin/users/:id</div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- TOKEN BAR -->
+  <div id="token-bar">
+    <label>Base URL :</label>
+    <input id="base-url-input" type="text" value="http://localhost:3000" />
+    <label>JWT Token :</label>
+    <input id="token-input" type="text" placeholder="Colle ton token ici (ou fais login)" />
+    <span id="token-status" class="token-status token-none">Aucun token</span>
+    <button class="copy-btn" onclick="clearToken()">Effacer</button>
+  </div>
+
+  <!-- WORKSPACE -->
+  <div id="workspace">
+    <div id="request-panel">
+      <!-- content injected by JS -->
+    </div>
+    <div id="response-panel">
+      <h3>Réponse</h3>
+      <div class="hint">Lance une requête pour voir la réponse ici.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──
+let currentRoute = 'home'
+
+const tokenInput  = document.getElementById('token-input')
+const baseUrlInput = document.getElementById('base-url-input')
+const tokenStatus = document.getElementById('token-status')
+
+tokenInput.addEventListener('input', () => {
+  const v = tokenInput.value.trim()
+  tokenStatus.textContent = v ? '✓ Token chargé' : 'Aucun token'
+  tokenStatus.className   = v ? 'token-status token-ok' : 'token-status token-none'
+})
+
+function getToken()   { return tokenInput.value.trim() }
+function getBaseUrl() { return baseUrlInput.value.replace(/\/$/, '') }
+function clearToken() { tokenInput.value = ''; tokenInput.dispatchEvent(new Event('input')) }
+function setToken(t)  { tokenInput.value = t; tokenInput.dispatchEvent(new Event('input')) }
+
+// ── ROUTE DEFINITIONS ──
+const ROUTES = {
+  'home': null,
+
+  'auth-register': {
+    method: 'POST', path: '/auth/register', auth: false,
+    desc: 'Crée un nouveau compte utilisateur et retourne un JWT.',
+    fields: [],
+    body: { email: 'test@example.com', name: 'Jean', surname: 'Dupont', password: 'secret123' }
+  },
+  'auth-login': {
+    method: 'POST', path: '/auth/login', auth: false,
+    desc: 'Authentifie un utilisateur. Le token JWT est automatiquement stocké.',
+    fields: [],
+    body: { email: 'test@example.com', password: 'secret123' },
+    onSuccess: (data) => { if (data.token) setToken(data.token) }
+  },
+  'auth-me': {
+    method: 'GET', path: '/auth/me', auth: true,
+    desc: 'Retourne le profil de l\'utilisateur connecté.',
+    fields: []
+  },
+
+  'col-list': {
+    method: 'GET', path: '/collections', auth: true,
+    desc: 'Retourne toutes les collections publiques + vos collections privées.',
+    fields: []
+  },
+  'col-mine': {
+    method: 'GET', path: '/collections/me/list', auth: true,
+    desc: 'Retourne uniquement vos collections.',
+    fields: []
+  },
+  'col-get': {
+    method: 'GET', path: '/collections/{id}', auth: true,
+    desc: 'Retourne une collection par son ID.',
+    fields: [{ name: 'id', label: 'Collection ID', placeholder: 'uuid de la collection' }]
+  },
+  'col-create': {
+    method: 'POST', path: '/collections', auth: true,
+    desc: 'Crée une nouvelle collection.',
+    fields: [],
+    body: { title: 'Ma collection', description: 'Description de la collection', visibility: 'public' }
+  },
+  'col-update': {
+    method: 'PUT', path: '/collections/{id}', auth: true,
+    desc: 'Met à jour une collection existante.',
+    fields: [{ name: 'id', label: 'Collection ID', placeholder: 'uuid' }],
+    body: { title: 'Nouveau titre', description: 'Nouvelle description', visibility: 'private' }
+  },
+  'col-delete': {
+    method: 'DELETE', path: '/collections/{id}', auth: true,
+    desc: 'Supprime une collection (propriétaire uniquement).',
+    fields: [{ name: 'id', label: 'Collection ID', placeholder: 'uuid' }]
+  },
+
+  'fc-list': {
+    method: 'GET', path: '/flashcards', auth: true,
+    desc: 'Retourne toutes les flashcards accessibles (collections publiques + les vôtres).',
+    fields: []
+  },
+  'fc-get': {
+    method: 'GET', path: '/flashcards/{id}', auth: true,
+    desc: 'Retourne une flashcard par son ID.',
+    fields: [{ name: 'id', label: 'Flashcard ID', placeholder: 'uuid' }]
+  },
+  'fc-by-col': {
+    method: 'GET', path: '/flashcards/collection/{collectionId}', auth: true,
+    desc: 'Retourne toutes les flashcards d\'une collection.',
+    fields: [{ name: 'collectionId', label: 'Collection ID', placeholder: 'uuid' }]
+  },
+  'fc-create': {
+    method: 'POST', path: '/flashcards', auth: true,
+    desc: 'Crée une flashcard dans une de vos collections.',
+    fields: [],
+    body: { rectoText: 'Question ?', versoText: 'Réponse.', rectoUrl: '', versoUrl: '', collectionId: 'uuid-de-la-collection' }
+  },
+  'fc-update': {
+    method: 'PUT', path: '/flashcards/{id}', auth: true,
+    desc: 'Met à jour une flashcard.',
+    fields: [{ name: 'id', label: 'Flashcard ID', placeholder: 'uuid' }],
+    body: { rectoText: 'Question modifiée ?', versoText: 'Réponse modifiée.' }
+  },
+  'fc-delete': {
+    method: 'DELETE', path: '/flashcards/{id}', auth: true,
+    desc: 'Supprime une flashcard.',
+    fields: [{ name: 'id', label: 'Flashcard ID', placeholder: 'uuid' }]
+  },
+
+  'rev-list': {
+    method: 'GET', path: '/revision/to-review', auth: true,
+    desc: 'Retourne les flashcards dont la date de révision est dépassée.',
+    fields: []
+  },
+  'rev-review': {
+    method: 'POST', path: '/revision/review/{flashCardId}', auth: true,
+    desc: 'Marque une flashcard comme révisée et met à jour le niveau Leitner.',
+    fields: [{ name: 'flashCardId', label: 'Flashcard ID', placeholder: 'uuid' }]
+  },
+
+  'admin-users': {
+    method: 'GET', path: '/admin/users', auth: true,
+    desc: 'Liste tous les utilisateurs. Requiert le rôle ADMIN.',
+    fields: []
+  },
+  'admin-user-get': {
+    method: 'GET', path: '/admin/users/{id}', auth: true,
+    desc: 'Retourne un utilisateur par son ID. Requiert ADMIN.',
+    fields: [{ name: 'id', label: 'User ID', placeholder: 'uuid' }]
+  },
+  'admin-user-delete': {
+    method: 'DELETE', path: '/admin/users/{id}', auth: true,
+    desc: 'Supprime un utilisateur. Requiert ADMIN.',
+    fields: [{ name: 'id', label: 'User ID', placeholder: 'uuid' }]
+  }
+}
+
+// ── RENDER ──
+function renderHome() {
+  return `
+    <div id="home">
+      <h2>🃏 API Flashcards — Test GUI</h2>
+      <p>Interface locale de test pour l'API. Commence par te connecter via <strong>Auth → /login</strong>. Le token JWT sera automatiquement enregistré dans la barre du haut.</p>
+
+      <table class="route-table">
+        <thead>
+          <tr><th>Méthode</th><th>Route</th><th>Auth</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          ${Object.entries(ROUTES).filter(([k]) => k !== 'home').map(([k, r]) => `
+            <tr style="cursor:pointer" onclick="navigate('${k}')">
+              <td><span class="method-badge ${r.method}">${r.method}</span></td>
+              <td style="font-family:monospace;font-size:12px">${r.path}</td>
+              <td style="color:${r.auth ? 'var(--yellow)' : 'var(--green)'};font-size:12px">${r.auth ? '🔒 JWT' : '🔓 Public'}</td>
+              <td style="color:var(--text2);font-size:12px">${r.desc}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `
+}
+
+function renderRoute(routeKey) {
+  const r = ROUTES[routeKey]
+  if (!r) return renderHome()
+
+  const hasBody = ['POST', 'PUT', 'PATCH'].includes(r.method)
+  const bodyDefault = r.body ? JSON.stringify(r.body, null, 2) : (hasBody ? '{}' : '')
+
+  return `
+    <div class="route-title">
+      <span class="method-badge ${r.method}">${r.method}</span>
+      <span style="font-family:monospace">${r.path}</span>
+      ${r.auth ? '<span style="font-size:13px;color:var(--yellow)">🔒 JWT requis</span>' : ''}
+    </div>
+    <p class="route-desc">${r.desc}</p>
+
+    ${r.fields && r.fields.length ? r.fields.map(f => `
+      <div class="field-group">
+        <label>${f.label}</label>
+        <input type="text" id="param-${f.name}" placeholder="${f.placeholder || ''}" />
+      </div>
+    `).join('') : ''}
+
+    ${hasBody ? `
+      <div class="field-group">
+        <label>Body (JSON)</label>
+        <textarea id="body-input">${bodyDefault}</textarea>
+      </div>
+    ` : ''}
+
+    <button class="send-btn" onclick="sendRequest('${routeKey}')">
+      ▶ Envoyer la requête
+    </button>
+  `
+}
+
+function navigate(routeKey) {
+  currentRoute = routeKey
+  // update nav
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.route === routeKey)
+  })
+  const panel = document.getElementById('request-panel')
+  panel.innerHTML = routeKey === 'home' ? renderHome() : renderRoute(routeKey)
+  // reset response
+  document.getElementById('response-panel').innerHTML = `
+    <h3>Réponse</h3>
+    <div class="hint">Lance une requête pour voir la réponse ici.</div>
+  `
+}
+
+// ── REQUEST ──
+async function sendRequest(routeKey) {
+  const r = ROUTES[routeKey]
+  if (!r) return
+
+  // build URL
+  let url = getBaseUrl() + r.path
+  if (r.fields) {
+    r.fields.forEach(f => {
+      const val = document.getElementById(`param-${f.name}`)?.value.trim()
+      if (val) url = url.replace(`{${f.name}}`, val)
+    })
+  }
+
+  // build options
+  const headers = { 'Content-Type': 'application/json' }
+  if (r.auth && getToken()) headers['Authorization'] = `Bearer ${getToken()}`
+
+  const options = { method: r.method, headers }
+  if (['POST', 'PUT', 'PATCH'].includes(r.method)) {
+    try {
+      const rawBody = document.getElementById('body-input')?.value || '{}'
+      options.body = rawBody
+    } catch (e) {
+      showError('Body JSON invalide : ' + e.message); return
+    }
+  }
+
+  // send
+  const btn = document.querySelector('.send-btn')
+  btn.disabled = true
+  btn.textContent = '⏳ Envoi...'
+  const t0 = Date.now()
+
+  try {
+    const res = await fetch(url, options)
+    const elapsed = Date.now() - t0
+    let data
+    try { data = await res.json() } catch { data = await res.text() }
+
+    if (r.onSuccess && res.ok) r.onSuccess(data)
+
+    showResponse(res.status, elapsed, data)
+  } catch (err) {
+    showError(`Erreur réseau : ${err.message}\n\nVérifie que le serveur tourne sur ${getBaseUrl()}`)
+  } finally {
+    btn.disabled = false
+    btn.textContent = '▶ Envoyer la requête'
+  }
+}
+
+function showResponse(status, elapsed, data) {
+  const cls = status < 300 ? 'status-2xx' : status < 500 ? 'status-4xx' : 'status-5xx'
+  const pretty = typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+  document.getElementById('response-panel').innerHTML = `
+    <h3>Réponse</h3>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="response-status" class="response-status ${cls}">HTTP ${status}</span>
+      <span id="response-time" class="response-time" style="font-size:12px;color:var(--text2)">${elapsed} ms</span>
+      <button class="copy-btn" onclick="copyResponse()">📋 Copier</button>
+    </div>
+    <pre id="response-body">${escHtml(pretty)}</pre>
+  `
+}
+
+function showError(msg) {
+  document.getElementById('response-panel').innerHTML = `
+    <h3>Réponse</h3>
+    <pre id="response-body" style="color:var(--red)">${escHtml(msg)}</pre>
+  `
+}
+
+function copyResponse() {
+  const el = document.getElementById('response-body')
+  navigator.clipboard.writeText(el.textContent)
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+}
+
+// ── INIT ──
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => navigate(el.dataset.route))
+})
+
+navigate('home')
+</script>
+</body>
+</html>

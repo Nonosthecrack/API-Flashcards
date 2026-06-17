@@ -1,33 +1,52 @@
 import {db} from "../db/database.js"
 import {collectionTable, flashCardTable} from "../db/schema.js"
-import {eq, or} from 'drizzle-orm'
+import {eq, or, sql} from 'drizzle-orm'
 
 export const getAllFlashcards = async (req, res) => {
-    try{
+    try {
+        const { page, limit, offset } = req.pagination
 
-        var flashCards = await db.select({ rectoText: flashCardTable.rectoText, id: flashCardTable.id }).from(flashCardTable).innerJoin(
-        collectionTable,
-        eq(flashCardTable.collectionId, collectionTable.id))
-        .where(
-            or(
+        const isAdmin = req.user.role === 'ADMIN'
+
+        const whereClause = isAdmin
+            ? undefined
+            : or(
                 eq(collectionTable.visibility, 'public'),
                 eq(collectionTable.ownerId, req.user.userId)
-            ))
+            )
 
-        if(req.user.role == 'ADMIN'){
-            flashCards = await db.select({ rectoText: flashCardTable.rectoText, id: flashCardTable.id }).from(flashCardTable).innerJoin(
-            collectionTable,
-            eq(flashCardTable.collectionId, collectionTable.id)) 
-        }
-        
+        const baseQuery = db
+            .select({ rectoText: flashCardTable.rectoText, id: flashCardTable.id })
+            .from(flashCardTable)
+            .innerJoin(collectionTable, eq(flashCardTable.collectionId, collectionTable.id))
 
-        res.status(200).json(flashCards)
+        const countQuery = db
+            .select({ count: sql`count(*)` })
+            .from(flashCardTable)
+            .innerJoin(collectionTable, eq(flashCardTable.collectionId, collectionTable.id))
+
+        const [flashCards, [{ count }]] = await Promise.all([
+            whereClause
+                ? baseQuery.where(whereClause).limit(limit).offset(offset)
+                : baseQuery.limit(limit).offset(offset),
+            whereClause
+                ? countQuery.where(whereClause)
+                : countQuery,
+        ])
+
+        const total = Number(count)
+
+        res.status(200).json({
+            data: flashCards,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        })
 
     } catch (error) {
         console.error(error)
-        res.status(500).json({
-            error: "Failed to fetch Flashcards"
-        })
+        res.status(500).json({ error: "Failed to fetch Flashcards" })
     }
 }
 
@@ -76,10 +95,7 @@ export const getFlashcardById = async (req, res) => {
         const [result] = await db
             .select()
             .from(flashCardTable)
-            .innerJoin(
-                collectionTable,
-                eq(flashCardTable.collectionId, collectionTable.id)
-            )
+            .innerJoin(collectionTable, eq(flashCardTable.collectionId, collectionTable.id))
             .where(eq(flashCardTable.id, id))
             .limit(1)
 
@@ -136,10 +152,9 @@ export const getFlashcardsByCollection = async (req, res) => {
     }
 }
 
-
 export const deleteFlashcard = async (req, res) => {
     try {
-        const { id } = req.params  
+        const { id } = req.params
 
         const [flashcard] = await db
             .select()
@@ -151,24 +166,14 @@ export const deleteFlashcard = async (req, res) => {
         }
 
         if (req.user.userId === flashcard.ownerId || req.user.role === 'ADMIN') {
-            const [deletedFlashcard] = await db
-                .delete(flashCardTable)
-                .where(eq(flashCardTable.id, id))
-                .returning()
-
-            return res.status(200).json({ 
-                message: 'Flashcard deleted successfully' 
-            })
+            await db.delete(flashCardTable).where(eq(flashCardTable.id, id)).returning()
+            return res.status(200).json({ message: 'Flashcard deleted successfully' })
         } else {
-            return res.status(403).json({
-                error: "You aren't allowed to delete this flashcard"
-            })
+            return res.status(403).json({ error: "You aren't allowed to delete this flashcard" })
         }
     } catch (error) {
         console.error(error)
-        res.status(500).json({
-            error: "Failed to delete flashcard"
-        })
+        res.status(500).json({ error: "Failed to delete flashcard" })
     }
 }
 
@@ -179,10 +184,7 @@ export const updateFlashcard = async (req, res) => {
         const [result] = await db
             .select()
             .from(flashCardTable)
-            .innerJoin(
-                collectionTable,
-                eq(flashCardTable.collectionId, collectionTable.id)
-            )
+            .innerJoin(collectionTable, eq(flashCardTable.collectionId, collectionTable.id))
             .where(eq(flashCardTable.id, id))
             .limit(1)
 
@@ -190,16 +192,13 @@ export const updateFlashcard = async (req, res) => {
             return res.status(404).json({ error: 'Flashcard not found' })
         }
 
-        const { FlashCards, Collection } = result
+        const { Collection } = result
 
         if (Collection.ownerId !== req.user.userId) {
             return res.status(403).json({ error: 'Access denied' })
         }
 
-        await db
-            .update(flashCardTable)
-            .set(req.body)
-            .where(eq(flashCardTable.id, id))
+        await db.update(flashCardTable).set(req.body).where(eq(flashCardTable.id, id))
 
         res.status(200).json({ message: 'Flashcard updated successfully' })
 

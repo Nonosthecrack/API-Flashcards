@@ -7,14 +7,35 @@ describe("GET /collections", () => {
     expect(res.status).toBe(401);
   });
 
-  it("retourne 200 avec un tableau vide au depart", async () => {
+  it("retourne 200 avec la structure paginee", async () => {
     const { token } = await registerAndLogin();
     const res = await api
       .get("/collections")
       .set("Authorization", `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body).toHaveProperty("data");
+    expect(res.body).toHaveProperty("total");
+    expect(res.body).toHaveProperty("page");
+    expect(res.body).toHaveProperty("limit");
+    expect(res.body).toHaveProperty("totalPages");
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  it("respecte les parametres page et limit", async () => {
+    const { token } = await registerAndLogin();
+    await createCollection(token, { title: "Collection A", visibility: "public" });
+    await createCollection(token, { title: "Collection B", visibility: "public" });
+    await createCollection(token, { title: "Collection C", visibility: "public" });
+
+    const res = await api
+      .get("/collections?page=1&limit=2")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.length).toBeLessThanOrEqual(2);
+    expect(res.body.limit).toBe(2);
+    expect(res.body.page).toBe(1);
   });
 });
 
@@ -53,15 +74,8 @@ describe("POST /collections", () => {
 describe("GET /collections/:id", () => {
   it("retourne une collection publique", async () => {
     const { token } = await registerAndLogin();
-    const created = await createCollection(token, { visibility: "public" });
+    await createCollection(token, { visibility: "public" });
 
-    const allRes = await api
-      .get("/collections")
-      .set("Authorization", `Bearer ${token}`);
-    const colId = allRes.body[0]?.id ||
-      (await api.get("/collections/me/list").set("Authorization", `Bearer ${token}`)).body[0]?.id;
-
-    // On recupere via me/list pour avoir l'id
     const meRes = await api
       .get("/collections/me/list")
       .set("Authorization", `Bearer ${token}`);

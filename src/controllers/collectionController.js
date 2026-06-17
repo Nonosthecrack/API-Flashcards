@@ -1,44 +1,62 @@
 import {collectionTable} from "../db/schema.js"
 import {db} from "../db/database.js"
-import {eq, or, like, and} from 'drizzle-orm'
+import {eq, or, like, and, sql} from 'drizzle-orm'
 
 export const getAllCollection = async (req, res) => {
-    try{
-        var collection = await db.select({ title: collectionTable.title, description: collectionTable.description }).from(collectionTable)
-                .where(
-                    or(
-                        eq(collectionTable.visibility, 'public'),
-                        eq(collectionTable.ownerId, req.user.userId)
-                    ))
-                    
-        if(req.user.role == 'ADMIN'){
-                    collection = await db.select({ title: collectionTable.title, description: collectionTable.description}).from(collectionTable)
-                }
-        res.status(200).json(collection)
-    }catch (error){
-        console.error(error);
-        res.status(500).json({error: 'Failed to fetch collections'})
+    try {
+        const { page, limit, offset } = req.pagination
+
+        const isAdmin = req.user.role === 'ADMIN'
+
+        const whereClause = isAdmin
+            ? undefined
+            : or(
+                eq(collectionTable.visibility, 'public'),
+                eq(collectionTable.ownerId, req.user.userId)
+            )
+
+        const fields = { title: collectionTable.title, description: collectionTable.description }
+
+        const baseQuery = db.select(fields).from(collectionTable)
+        const countQuery = db.select({ count: sql`count(*)` }).from(collectionTable)
+
+        const [collections, [{ count }]] = await Promise.all([
+            whereClause
+                ? baseQuery.where(whereClause).limit(limit).offset(offset)
+                : baseQuery.limit(limit).offset(offset),
+            whereClause
+                ? countQuery.where(whereClause)
+                : countQuery,
+        ])
+
+        const total = Number(count)
+
+        res.status(200).json({
+            data: collections,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        })
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ error: 'Failed to fetch collections' })
     }
 }
 
-
-export const createCollection = async(req, res ) => {
+export const createCollection = async(req, res) => {
     try {
-        const { title, description, visibility , ownerId} = req.body
-
+        const { title, description, visibility } = req.body
         const userId = req.user.userId
 
-        await db.insert(collectionTable).values({ title: title, description: description, visibility: visibility, ownerId: userId }).returning()
-        
-        res.status(201).send({message: 'Collection created'})
+        await db.insert(collectionTable).values({ title, description, visibility, ownerId: userId }).returning()
+
+        res.status(201).send({ message: 'Collection created' })
     } catch (error) {
-        res.status(500).json({error: 'Failed to create Collection'})
+        res.status(500).json({ error: 'Failed to create Collection' })
     }
 }
-
-
-
-
 
 export const deleteCollection = async (req, res) => {
     const { id } = req.params
@@ -56,18 +74,12 @@ export const deleteCollection = async (req, res) => {
         }
 
         if (collection.ownerId !== userId) {
-            return res.status(403).json({
-                error: "You are not allowed to delete this Collection"
-            })
+            return res.status(403).json({ error: "You are not allowed to delete this Collection" })
         }
 
-        await db
-            .delete(collectionTable)
-            .where(eq(collectionTable.id, id))
+        await db.delete(collectionTable).where(eq(collectionTable.id, id))
 
-        res.status(200).json({
-            message: `Collection ${id} deleted successfully`
-        })
+        res.status(200).json({ message: `Collection ${id} deleted successfully` })
 
     } catch (error) {
         console.error(error)
@@ -160,10 +172,7 @@ export const updateCollection = async (req, res) => {
             return res.status(403).json({ error: 'Access denied' })
         }
 
-        await db
-            .update(collectionTable)
-            .set(req.body)
-            .where(eq(collectionTable.id, id))
+        await db.update(collectionTable).set(req.body).where(eq(collectionTable.id, id))
 
         res.status(200).json({ message: 'Collection updated successfully' })
     } catch (error) {

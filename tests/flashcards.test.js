@@ -17,14 +17,35 @@ describe("GET /flashcards", () => {
     expect(res.status).toBe(401);
   });
 
-  it("retourne 200 avec un tableau", async () => {
+  it("retourne 200 avec la structure paginee", async () => {
     const { token } = await registerAndLogin();
     const res = await api
       .get("/flashcards")
       .set("Authorization", `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body).toHaveProperty("data");
+    expect(res.body).toHaveProperty("total");
+    expect(res.body).toHaveProperty("page");
+    expect(res.body).toHaveProperty("limit");
+    expect(res.body).toHaveProperty("totalPages");
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  it("respecte les parametres page et limit", async () => {
+    const { token, collectionId } = await setupUserWithCollection("paginate@test.com");
+    await createFlashcard(token, collectionId, { rectoText: "Q1", versoText: "R1" });
+    await createFlashcard(token, collectionId, { rectoText: "Q2", versoText: "R2" });
+    await createFlashcard(token, collectionId, { rectoText: "Q3", versoText: "R3" });
+
+    const res = await api
+      .get("/flashcards?page=1&limit=2")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.length).toBeLessThanOrEqual(2);
+    expect(res.body.limit).toBe(2);
+    expect(res.body.page).toBe(1);
   });
 });
 
@@ -76,7 +97,7 @@ describe("GET /flashcards/:id", () => {
     const listRes = await api
       .get("/flashcards")
       .set("Authorization", `Bearer ${token}`);
-    const id = listRes.body[0]?.id;
+    const id = listRes.body.data[0]?.id;
 
     const res = await api
       .get(`/flashcards/${id}`)
@@ -101,7 +122,7 @@ describe("GET /flashcards/:id", () => {
     const listRes = await api
       .get("/flashcards")
       .set("Authorization", `Bearer ${owner}`);
-    const id = listRes.body[0]?.id;
+    const id = listRes.body.data[0]?.id;
 
     const { token: other } = await registerAndLogin({ email: "other@test.com" });
     const res = await api
@@ -120,7 +141,7 @@ describe("DELETE /flashcards/:id", () => {
     const listRes = await api
       .get("/flashcards")
       .set("Authorization", `Bearer ${token}`);
-    const id = listRes.body[0]?.id;
+    const id = listRes.body.data[0]?.id;
 
     const res = await api
       .delete(`/flashcards/${id}`)
@@ -136,7 +157,7 @@ describe("DELETE /flashcards/:id", () => {
     const listRes = await api
       .get("/flashcards")
       .set("Authorization", `Bearer ${owner}`);
-    const id = listRes.body[0]?.id;
+    const id = listRes.body.data[0]?.id;
 
     const { token: other } = await registerAndLogin({ email: "other@test.com" });
     const res = await api

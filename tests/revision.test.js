@@ -14,7 +14,7 @@ async function setupRevision() {
   const listRes = await api
     .get("/flashcards")
     .set("Authorization", `Bearer ${token}`);
-  const flashCardId = listRes.body[0]?.id;
+  const flashCardId = listRes.body.data[0]?.id;
 
   return { token, collectionId, flashCardId };
 }
